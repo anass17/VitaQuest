@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: vitaquest_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: vitaquest_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend/app:/app
+
+
+  qdrant:
+    image: qdrant/qdrant:v1.16.2
+    container_name: vitaquest_qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+
+  frontend:
+    build: ./frontend
+    container_name: vitaquest_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules        # ANONYMOUS VOLUME: This protects the container's node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - REACT_APP_API_URL=http://backend:8000
+    command: npm run dev
+
+
+  # mlflow:
+  #   build:
+  #     context: .
+  #     dockerfile: mlflow/Dockerfile
+  #   container_name: vitaquest_mlflow
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - MLFLOW_HTTP_ALLOWED_HOSTS=*
+  #   volumes:
+  #     - ./mlflow_data:/mlflow
+  #   command: >
+  #     mlflow server 
+  #       --backend-store-uri postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+  #       --default-artifact-root /mlflow/artifacts
+  #       --serve-artifacts
+  #       --host 0.0.0.0
+  #       --port 5000
+  #       --allowed-hosts "*"
+
+volumes:
+  pgdata:
+  qdrant_storage:
+
+  
