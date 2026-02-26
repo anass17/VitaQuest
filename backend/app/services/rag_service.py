@@ -10,13 +10,22 @@ from qdrant_client.models import (
     VectorParams,
     Distance
 )
-from qdrant_client.models import FieldCondition, Filter, MatchValue
 import sqlite3
-from sentence_transformers import CrossEncoder
-from utils.llm_prompt import llm_prompt
-import requests
+
+from deepeval.metrics import (
+    AnswerRelevancyMetric,
+    FaithfulnessMetric,
+    ContextualPrecisionMetric,
+    ContextualRecallMetric
+)
+from deepeval.test_case import LLMTestCase
+from deepeval.models import OllamaModel
 # from rag.reranker import chunks_reranker
 # from rag.mlflow_utils import log_metrics
+
+from .utils.retriever import hierarchical_retriever
+from .utils.reranker import chunks_reranker
+from .utils.generation import llm_generate_answer
 
 
 class RAGService:
@@ -26,12 +35,8 @@ class RAGService:
         self.conn = sqlite3.connect('../rag_chunks.db')
         self.ollama_url = "http://host.docker.internal:11434/api/generate"
         self.cursor = self.conn.cursor()
-
-        # Setup SQLite Table
-        # self.cursor.execute('''
-        #     DROP TABLE parents
-        # ''')
-        # self.conn.commit()
+        self.ollama_model = OllamaModel(model="llama3:8b", base_url="http://host.docker.internal:11434")
+        
 
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS parents (
@@ -311,122 +316,46 @@ class RAGService:
     ### Retriever
 
     
-    def chunks_reranker(self, query, chunks, model, top_k=5, min=0.3):
-        reranker = CrossEncoder(model)
+    
 
-        pairs = [(query, chunk["text"]) for chunk in chunks]
-
-        scores = reranker.predict(pairs)
-
-        reranked = sorted(
-            zip(chunks, scores),
-            key=lambda x: x[1],
-            reverse=True
-        )
-
-        top_chunks = [chunk for chunk, score in reranked[:top_k] if float(score) >= min]
-
-        return top_chunks
+        
     
 
 
-    def hierarchical_retriever(self, query: str, emb_model: str, cross_encoder: str, retrieval_top_k: int = 20, rerank_top_k: int = 5, min_score: int = 0.3, normalise: bool = True, mlflow_log: bool = False) -> List[Dict]:
+    def evaluate_rag(self, query, context_chunks, answer, expected_answer):
 
-        embedder = SentenceTransformer(emb_model)
+        context_text = [c["text"] for c in context_chunks]
 
-        # Embed the query
-        query_vector = embedder.encode(query, normalize_embeddings=normalise).tolist()
-
-        # Retrieve top_k chunks from Qdrant
-        response = self.client.query_points(
-            collection_name="manual_chunks",
-            query=query_vector,
-            limit=retrieval_top_k,
-            with_payload=True
+        test_case = LLMTestCase(
+            input=query,
+            actual_output=answer,
+            expected_output=expected_answer,
+            retrieval_context=context_text
         )
 
-        final_context = []
-        seen_parents = set()
-        
-        for hit in response.points:
-            p_id = hit.payload['parent_id']
-            
-            if p_id not in seen_parents:
-                # Fetch Parent from SQLite
-                self.cursor.execute("SELECT text, chapter, section, categorie, page FROM parents WHERE id = ?", (p_id,))
-                parent_data = self.cursor.fetchone()
+        # Metrics
+        answer_relevancy = AnswerRelevancyMetric(model=self.ollama_model)
+        faithfulness = FaithfulnessMetric(model=self.ollama_model)
+        precision = ContextualPrecisionMetric(model=self.ollama_model)
+        recall = ContextualRecallMetric(model=self.ollama_model)
 
-                if parent_data:
-                    text, chapter, section, categorie, page = parent_data
-                    final_context.append({
-                        "text": text,
-                        "categorie": categorie,
-                        "chapter": chapter,
-                        "section": section,
-                        "page": page,
-                        "score": hit.score
-                    })
-                    seen_parents.add(p_id)
-                    
-        # return final_context
+        # Measure
+        answer_relevancy.measure(test_case)
+        faithfulness.measure(test_case)
+        precision.measure(test_case)
+        recall.measure(test_case)
 
-        # if mlflow_log:
-        #     log_metrics({
-        #         "Number of retrived chunks": len(retrieved_chunks)
-        #     })
-        
+        return {
+            "answer_relevancy": answer_relevancy.score,
+            "faithfulness": faithfulness.score,
+            "precision_at_k": precision.score,
+            "recall_at_k": recall.score
+        }
+    
 
-        # if mlflow_log:
-        #     log_metrics({
-        #         "Number of reranked chunks": len(top_chunks)
-        #     })
-
-        return final_context
-
-
-        
-    def ollama_generate(self, prompt: str, model: str, temperature: int = 0.2, max_tokens: int = 256) -> str:
-        response = requests.post(
-            self.ollama_url,
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens
-                }
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        return response.json()["response"]
-
-
-
-    # def store_answer(db: Session, user_query: str, answer: str):
-    #     query = Query(
-    #         query=user_query,
-    #         reponse=answer
-    #     )
-
-    #     db.add(query)
-    #     db.commit()
-
-
-
-    def llm_generate_answer(self, query: str, model: str, chunks: List[Dict], temperature: int = 0.2, max_tokens: int = 256) -> str:
-
-        # Build context from chunks
-        context = "\n\n".join([f"{c['chapter']} | {c['section']}\n{c['text']}" 
-                            for c in chunks])
-
-
-        # log_text(llm_prompt("[Query]", "[Context]"), "prompt_template.txt")
-
-        # Construct prompt
-        prompt = llm_prompt(query, context)
-        answer = self.ollama_generate(prompt, model, temperature, max_tokens)  # returns string
+    def retrieve_generate_pipeline(self, query, emb_model, cross_model, llm_model, retrieval_top_k = 20, rerank_top_k = 5, rerank_min_score = 0.3, normalise = True, temperature = 0.2, max_tokens = 256, mlflow_log = False):
+        chunks = hierarchical_retriever(self.client, self.cursor, query, emb_model, retrieval_top_k, normalise, mlflow_log)
+        reranked_chunks = chunks_reranker(query, chunks, cross_model, rerank_top_k, rerank_min_score, mlflow_log)
+        answer = llm_generate_answer(query, self.ollama_url, llm_model, reranked_chunks, temperature, max_tokens)
 
         return answer
-

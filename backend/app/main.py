@@ -67,16 +67,12 @@ async def upload_pdf(
 
 
 
-@app.post("/retrieve")
+@app.post("/answer/generate")
 async def upload_pdf(
     data: queryData
 ):
 
-    context = rag_service.hierarchical_retriever(data.query, EMBEDDING_MODEL, CROSS_ENCODER)
-
-    reranked_context = rag_service.chunks_reranker(data.query, context, CROSS_ENCODER)
-
-    answer = rag_service.llm_generate_answer(data.query, LLM_MODEL, reranked_context)
+    answer = rag_service.retrieve_generate_pipeline(data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL)
 
     return {
         "result": answer

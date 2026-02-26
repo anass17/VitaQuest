@@ -51,25 +51,25 @@ services:
     command: npm run dev
 
 
-  # mlflow:
-  #   build:
-  #     context: .
-  #     dockerfile: mlflow/Dockerfile
-  #   container_name: vitaquest_mlflow
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     - MLFLOW_HTTP_ALLOWED_HOSTS=*
-  #   volumes:
-  #     - ./mlflow_data:/mlflow
-  #   command: >
-  #     mlflow server 
-  #       --backend-store-uri postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
-  #       --default-artifact-root /mlflow/artifacts
-  #       --serve-artifacts
-  #       --host 0.0.0.0
-  #       --port 5000
-  #       --allowed-hosts "*"
+  mlflow:
+    build:
+      context: .
+      dockerfile: mlflow/Dockerfile
+    container_name: vitaquest_mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_HTTP_ALLOWED_HOSTS=*
+    volumes:
+      - ./mlflow_data:/mlflow
+    command: >
+      mlflow server 
+        --backend-store-uri postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+        --default-artifact-root /mlflow/artifacts
+        --serve-artifacts
+        --host 0.0.0.0
+        --port 5000
+        --allowed-hosts "*"
 
 volumes:
   pgdata:
