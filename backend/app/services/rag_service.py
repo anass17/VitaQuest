@@ -13,6 +13,8 @@ from qdrant_client.models import (
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 import sqlite3
 from sentence_transformers import CrossEncoder
+from utils.llm_prompt import llm_prompt
+import requests
 # from rag.reranker import chunks_reranker
 # from rag.mlflow_utils import log_metrics
 
@@ -22,6 +24,7 @@ class RAGService:
     def __init__(self):
         self.client = QdrantClient(url="http://qdrant:6333")
         self.conn = sqlite3.connect('../rag_chunks.db')
+        self.ollama_url = "http://host.docker.internal:11434/api/generate"
         self.cursor = self.conn.cursor()
 
         # Setup SQLite Table
@@ -373,12 +376,57 @@ class RAGService:
         #     })
         
 
-        # Step 4: Rerank
-        top_chunks = self.chunks_reranker(query, final_context, cross_encoder, rerank_top_k, min_score)
-
         # if mlflow_log:
         #     log_metrics({
         #         "Number of reranked chunks": len(top_chunks)
         #     })
 
-        return top_chunks
+        return final_context
+
+
+        
+    def ollama_generate(self, prompt: str, model: str, temperature: int = 0.2, max_tokens: int = 256) -> str:
+        response = requests.post(
+            self.ollama_url,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens
+                }
+            },
+            timeout=120
+        )
+        response.raise_for_status()
+        return response.json()["response"]
+
+
+
+    # def store_answer(db: Session, user_query: str, answer: str):
+    #     query = Query(
+    #         query=user_query,
+    #         reponse=answer
+    #     )
+
+    #     db.add(query)
+    #     db.commit()
+
+
+
+    def llm_generate_answer(self, query: str, model: str, chunks: List[Dict], temperature: int = 0.2, max_tokens: int = 256) -> str:
+
+        # Build context from chunks
+        context = "\n\n".join([f"{c['chapter']} | {c['section']}\n{c['text']}" 
+                            for c in chunks])
+
+
+        # log_text(llm_prompt("[Query]", "[Context]"), "prompt_template.txt")
+
+        # Construct prompt
+        prompt = llm_prompt(query, context)
+        answer = self.ollama_generate(prompt, model, temperature, max_tokens)  # returns string
+
+        return answer
+

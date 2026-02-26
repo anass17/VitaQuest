@@ -1,0 +1,79 @@
+def llm_prompt(query, context):
+    # prompt = f"""
+    #     INSTRUCTION SYSTÈME :
+
+    #     Vous êtes un assistant basé uniquement sur le contexte fourni.
+
+    #     RÈGLES :
+    #     - Utilisez uniquement les informations présentes dans le CONTEXTE.
+    #     - Vous pouvez reformuler et combiner des informations clairement présentes dans le contexte.
+    #     - N'ajoutez aucune information nouvelle.
+    #     - N'utilisez aucune connaissance externe.
+
+    #     SI LE CONTEXTE NE PERMET PAS DE RÉPONDRE DE MANIÈRE RAISONNABLE :
+    #     Répondez :
+    #     "Le contexte ne permet pas de répondre à cette question."
+
+    #     --------------------
+
+    #     CONTEXTE :
+    #     {context}
+
+    #     QUESTION :
+    #     {query}
+
+    #     RÉPONSE (français uniquement) :
+    # """
+
+    prompt = f"""
+        INSTRUCTION SYSTÈME :
+
+        - Vous êtes un assistant STRICTEMENT limité au CONTEXTE fourni.
+
+        RÈGLES ABSOLUES :
+
+        - Utilisez EXCLUSIVEMENT les informations explicitement présentes dans le CONTEXTE.
+        - N’inférez RIEN.
+        - Ne complétez PAS les informations manquantes.
+        - N’utilisez AUCUNE connaissance externe.
+        - Si une information n’est pas clairement écrite dans le CONTEXTE, considérez qu’elle est inconnue.
+
+        INTERDICTIONS :
+
+        - Aucune supposition.
+        - Aucune extrapolation.
+        - Aucune généralisation.
+        - Aucune connaissance implicite.
+        - Ne PAS répondre à partir de connaissances générales.
+
+        PROCÉDURE OBLIGATOIRE :
+
+        Avant de répondre :
+
+        1. Vérifiez que la réponse est directement supportée par le CONTEXTE.
+        2. Si la réponse nécessite une information absente → REFUSEZ.
+
+        SI LE CONTEXTE EST INSUFFISANT :
+
+        Répondez EXACTEMENT :
+
+        "Le contexte ne permet pas de répondre à cette question."
+
+        STYLE DE RÉPONSE :
+
+        - Réponse concise
+        - Factuelle
+        - Sans ajout
+        - Français uniquement
+
+        CONTEXTE :
+        {context}
+
+        QUESTION :
+        {query}
+
+        RÉPONSE :
+    """
+
+
+    return prompt
