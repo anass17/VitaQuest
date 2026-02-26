@@ -17,52 +17,25 @@ LLM_TEMPERATURE = 0.2
 LLM_MAX_TOKENS = 256
 
 
+
 @app.get('/')
 def hello():
     return {
         "message": "Hello !"
     }
 
-@app.post("/ingest")
+
+
+@app.post("/document/ingest")
 async def upload_pdf(
     file: UploadFile = File(...)
 ):
 
-    docs = rag_service.extract_content_from_uploaded_pdf(file)
-
-    with open("file_test.json", "w") as json_file:
-        json.dump(
-            {
-                "content": docs,
-            },
-            json_file
-        )
+    chunks = rag_service.chunk_store_pipeline(file, EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE)
 
     return {
-        'message': docs
-    }
-
-
-
-@app.post("/chunk")
-async def upload_pdf(
-    file: UploadFile = File(...)
-):
-
-    # docs = rag_service.extract_content_from_uploaded_pdf(file)
-
-    with open("file_test.json", "r") as json_file:
-        docs = json.load(json_file)['content'][0]
-
-    chunks = rag_service.chunk_markdown_documents(docs, file.filename)
-
-    rag_service.store_parent_chunks(chunks[0])
-
-    rag_service.store_chunks(chunks[1], EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE)
-
-
-    return {
-        'message': chunks
+        'Parent Chunks Count': len(chunks[0]),
+        'Child Chunks Count': len(chunks[1])
     }
 
 
@@ -75,5 +48,5 @@ async def upload_pdf(
     answer = rag_service.retrieve_generate_pipeline(data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL)
 
     return {
-        "result": answer
+        "answer": answer
     }
