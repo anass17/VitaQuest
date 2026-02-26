@@ -10,6 +10,10 @@ from qdrant_client.models import (
     VectorParams,
     Distance
 )
+from qdrant_client.models import FieldCondition, Filter, MatchValue
+import sqlite3
+from sentence_transformers import CrossEncoder
+# from rag.reranker import chunks_reranker
 # from rag.mlflow_utils import log_metrics
 
 
@@ -17,6 +21,28 @@ class RAGService:
 
     def __init__(self):
         self.client = QdrantClient(url="http://qdrant:6333")
+        self.conn = sqlite3.connect('../rag_chunks.db')
+        self.cursor = self.conn.cursor()
+
+        # Setup SQLite Table
+        # self.cursor.execute('''
+        #     DROP TABLE parents
+        # ''')
+        # self.conn.commit()
+
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS parents (
+                id TEXT PRIMARY KEY,
+                text TEXT,
+                chapter TEXT,
+                section TEXT,
+                categorie TEXT,
+                page INTEGER
+            )
+        ''')
+        self.conn.commit()
+
+
 
     ### Extraction
 
@@ -185,7 +211,15 @@ class RAGService:
                     full_parent_text = f"{title}\n{content}"
                     
                     # Save to Parent Store
-                    parent_store[parent_id] = full_parent_text
+                    parent_store[parent_id] = {
+                        "content": full_parent_text,
+                        "metadata": {
+                            "chapter": chapter_name,
+                            "section": title,
+                            "categorie": categorie_name,
+                            "page": page_num
+                        }
+                    }
                     
                     # Create Children manually
                     paragraphs = content.split('\n\n')
@@ -224,7 +258,7 @@ class RAGService:
             vector = embedder.encode(chunk["text"], normalize_embeddings=normalise)
 
             payload = chunk["metadata"].copy()
-            # payload['content'] = chunk["text"]
+            payload['content'] = chunk["text"]
 
             points.append(
                 PointStruct(
@@ -244,3 +278,107 @@ class RAGService:
         print("-- Storage complete")
 
 
+
+    def store_parent_chunks(self, parent_docs: dict):
+        self.cursor.execute('''
+            DELETE FROM parents
+        ''')
+        self.conn.commit()
+
+        for id, doc in parent_docs.items():
+
+            parent_id = id
+            content = doc["content"]
+            chapter = doc["metadata"].get('chapter', 'Unknown')
+            section = doc["metadata"].get('section', 'Unknown')
+            categorie = doc["metadata"].get('categorie', 'Unknown')
+            page = doc["metadata"].get('page', 'Unknown')
+            
+            # Save Parent to SQLite
+            self.cursor.execute(
+                "INSERT INTO parents (id, text, chapter, section, categorie, page) VALUES (?, ?, ?, ?, ?, ?)",
+                (parent_id, content, chapter, section, categorie, page)
+            )
+        
+        self.conn.commit()
+
+        return True
+
+
+    ### Retriever
+
+    
+    def chunks_reranker(self, query, chunks, model, top_k=5, min=0.3):
+        reranker = CrossEncoder(model)
+
+        pairs = [(query, chunk["text"]) for chunk in chunks]
+
+        scores = reranker.predict(pairs)
+
+        reranked = sorted(
+            zip(chunks, scores),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        top_chunks = [chunk for chunk, score in reranked[:top_k] if float(score) >= min]
+
+        return top_chunks
+    
+
+
+    def hierarchical_retriever(self, query: str, emb_model: str, cross_encoder: str, retrieval_top_k: int = 20, rerank_top_k: int = 5, min_score: int = 0.3, normalise: bool = True, mlflow_log: bool = False) -> List[Dict]:
+
+        embedder = SentenceTransformer(emb_model)
+
+        # Embed the query
+        query_vector = embedder.encode(query, normalize_embeddings=normalise).tolist()
+
+        # Retrieve top_k chunks from Qdrant
+        response = self.client.query_points(
+            collection_name="manual_chunks",
+            query=query_vector,
+            limit=retrieval_top_k,
+            with_payload=True
+        )
+
+        final_context = []
+        seen_parents = set()
+        
+        for hit in response.points:
+            p_id = hit.payload['parent_id']
+            
+            if p_id not in seen_parents:
+                # Fetch Parent from SQLite
+                self.cursor.execute("SELECT text, chapter, section, categorie, page FROM parents WHERE id = ?", (p_id,))
+                parent_data = self.cursor.fetchone()
+
+                if parent_data:
+                    text, chapter, section, categorie, page = parent_data
+                    final_context.append({
+                        "text": text,
+                        "categorie": categorie,
+                        "chapter": chapter,
+                        "section": section,
+                        "page": page,
+                        "score": hit.score
+                    })
+                    seen_parents.add(p_id)
+                    
+        # return final_context
+
+        # if mlflow_log:
+        #     log_metrics({
+        #         "Number of retrived chunks": len(retrieved_chunks)
+        #     })
+        
+
+        # Step 4: Rerank
+        top_chunks = self.chunks_reranker(query, final_context, cross_encoder, rerank_top_k, min_score)
+
+        # if mlflow_log:
+        #     log_metrics({
+        #         "Number of reranked chunks": len(top_chunks)
+        #     })
+
+        return top_chunks

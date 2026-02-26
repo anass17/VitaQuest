@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from services.rag_service import RAGService
+from schemas.query import queryData
 import json
 
 app = FastAPI()
@@ -10,6 +11,7 @@ rag_service = RAGService()
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 EMBEDDING_SIZE = 768
 EMBEDDING_NORMALISE = True
+CROSS_ENCODER = "BAAI/bge-reranker-large"
 
 
 @app.get('/')
@@ -51,7 +53,10 @@ async def upload_pdf(
 
     chunks = rag_service.chunk_markdown_documents(docs, file.filename)
 
+    rag_service.store_parent_chunks(chunks[0])
+
     rag_service.store_chunks(chunks[1], EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE)
+
 
     return {
         'message': chunks
@@ -59,11 +64,13 @@ async def upload_pdf(
 
 
 
-@app.get("/vectors")
-async def upload_pdf():
+@app.post("/retrieve")
+async def upload_pdf(
+    data: queryData
+):
 
-    d = rag_service.get_count()
+    context = rag_service.hierarchical_retriever(data.query, EMBEDDING_MODEL, CROSS_ENCODER)
 
     return {
-        "result": d
+        "result": context
     }
