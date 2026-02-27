@@ -2,8 +2,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File
 from services.rag_service import RAGService
 from schemas.query import queryData
-import json
-import mlflow
 from utils.mlflow_evaluation import setup_mlflow
 
 
