@@ -1,13 +1,5 @@
 import sqlite3
 from qdrant_client import QdrantClient
-
-from deepeval.metrics import (
-    AnswerRelevancyMetric,
-    FaithfulnessMetric,
-    ContextualPrecisionMetric,
-    ContextualRecallMetric
-)
-from deepeval.test_case import LLMTestCase
 from deepeval.models import OllamaModel
 
 from .utils.extract import extract_content_from_uploaded_pdf
@@ -18,9 +10,12 @@ from .utils.retrieve import hierarchical_retriever
 from .utils.rerank import chunks_reranker
 from .utils.generate import llm_generate_answer
 
-from utils.mlflow_evaluation import setup_mlflow, start_run, log_params, log_dict, log_text
+from utils.mlflow_evaluation import setup_mlflow, start_run, log_params, log_dict, log_text, log_metrics
 from .utils.prompt import llm_prompt
+from .utils.evaluate import evaluate_rag
+from .utils.queries import eval_queries
 
+from random import choice
 
 class RAGService:
 
@@ -43,41 +38,7 @@ class RAGService:
             )
         ''')
         self.conn.commit()
-
-        setup_mlflow("vitaquest_experiment")
         
-
-
-
-    def evaluate_rag(self, query, context_chunks, answer, expected_answer):
-
-        context_text = [c["text"] for c in context_chunks]
-
-        test_case = LLMTestCase(
-            input=query,
-            actual_output=answer,
-            expected_output=expected_answer,
-            retrieval_context=context_text
-        )
-
-        # Metrics
-        answer_relevancy = AnswerRelevancyMetric(model=self.ollama_model)
-        faithfulness = FaithfulnessMetric(model=self.ollama_model)
-        precision = ContextualPrecisionMetric(model=self.ollama_model)
-        recall = ContextualRecallMetric(model=self.ollama_model)
-
-        # Measure
-        answer_relevancy.measure(test_case)
-        faithfulness.measure(test_case)
-        precision.measure(test_case)
-        recall.measure(test_case)
-
-        return {
-            "answer_relevancy": answer_relevancy.score,
-            "faithfulness": faithfulness.score,
-            "precision_at_k": precision.score,
-            "recall_at_k": recall.score
-        }
     
 
 
@@ -142,8 +103,12 @@ class RAGService:
 
     
 
-    def evaluate_retrieval_generation_pipeline(self, query, emb_model, cross_model, llm_model, retrieval_top_k = 20, rerank_top_k = 5, rerank_min_score = 0.3, normalise = True, temperature = 0.2, max_tokens = 256):
+    def evaluate_retrieval_generation_pipeline(self, emb_model, cross_model, llm_model, retrieval_top_k = 20, rerank_top_k = 5, rerank_min_score = 0.3, normalise = True, temperature = 0.2, max_tokens = 256):
         
+        chosen_item = choice(eval_queries)
+        query = chosen_item["query"]
+        expected_answer = chosen_item["answer"]
+
         with start_run("RAG-Generation"):
 
             log_params({
@@ -163,6 +128,8 @@ class RAGService:
             
             answer = llm_generate_answer(query, self.ollama_url, llm_model, reranked_chunks, temperature, max_tokens)
 
+            metrics = evaluate_rag(query, self.ollama_model, reranked_chunks, answer, expected_answer)
+
             log_params({
                 "Number of retrived chunks": len(chunks),
                 "Number of reranked chunks": len(reranked_chunks)
@@ -173,10 +140,14 @@ class RAGService:
             log_dict({
                 "Query": query,
                 "Answer": answer,
-                "Chunks": reranked_chunks
+                "Retrieved Chunks": chunks,
+                "Reranked Chunks": reranked_chunks
             }, "generation_details.json")
+
+            log_metrics(metrics)
 
             return {
                 "query": query,
-                "answer": answer
+                "answer": answer,
+                "metrics": metrics
             }

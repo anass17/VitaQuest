@@ -2,7 +2,7 @@ FROM ghcr.io/mlflow/mlflow:v3.8.1
 
 
 WORKDIR /app
-COPY . .
+COPY ./mlflow .
 
 
 # Install PostgreSQL driver
@@ -14,4 +14,5 @@ CMD mlflow server \
     --default-artifact-root /mlflow/artifacts \
     --serve-artifacts \
     --host 0.0.0.0 \
-    --port 5000
+    --port 5000 \
+    --allowed-hosts "*"

@@ -1,9 +1,25 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File
 from services.rag_service import RAGService
 from schemas.query import queryData
 import json
+import mlflow
+from utils.mlflow_evaluation import setup_mlflow
 
-app = FastAPI()
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # STARTUP code
+
+    setup_mlflow("vitaquest-rag-expirement")
+
+    yield
+
+
+
+app = FastAPI(lifespan=lifespan)
 
 rag_service = RAGService()
 
@@ -70,10 +86,8 @@ async def evaluate_chunking(
 
 
 @app.post("/evaluate/generation")
-async def evaluate_retrieval_and_generation(
-    data: queryData
-):
+async def evaluate_retrieval_and_generation():
 
-    answer = rag_service.evaluate_retrieval_generation_pipeline(data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL, RETRIEVAL_TOP_K, RERANK_TOP_K, MIN_RERANK_SCORE, EMBEDDING_NORMALISE, LLM_TEMPERATURE, LLM_MAX_TOKENS)
+    answer = rag_service.evaluate_retrieval_generation_pipeline(EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL, RETRIEVAL_TOP_K, RERANK_TOP_K, MIN_RERANK_SCORE, EMBEDDING_NORMALISE, LLM_TEMPERATURE, LLM_MAX_TOKENS)
 
     return answer

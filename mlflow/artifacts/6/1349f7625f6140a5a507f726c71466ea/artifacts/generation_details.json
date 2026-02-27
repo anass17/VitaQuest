@@ -1,0 +1,14 @@
+{
+  "Query": "Quelles sont les causes possibles d\u2019un \u00e9tat d\u2019agitation ?",
+  "Answer": "Le contexte ne permet pas de r\u00e9pondre \u00e0 cette question.",
+  "Chunks": [
+    {
+      "text": "CE QU'IL FAUT FAIRE\n\n\u2022 Assurer un suivi rigoureux des patients mentaux avec d\u00e9tection pr\u00e9coce de la d\u00e9compensation par des visites \u00e0 domicile r\u00e9guli\u00e8re (au moins une fois par mois et \u00e0 la demande de la famille, penser \u00e0 questionner l'entourage sur le comportement du patient). Effectuer des actions de pr\u00e9vention du trouble d'usage de substance (alcool, tabac, cannabis, m\u00e9tamph\u00e9tamines) notamment aupr\u00e8s des jeunes.\n\n\u2022 Rassurer le patient, l'entourage et soi-m\u00eame. Respecter le patient, lui parler calmement et correctement, c'est encore plus important que pour tout autre malade. Ne pas r\u00e9pondre aux \u00ab provocations \u00bb du patient.\n\n\u2022 L'interrogatoire et la prise de param\u00e8tres sont obligatoires permettant d'\u00e9liminer les causes classiques d'agitation non psychiatrique : alcoolisation aigue, intoxication aigue, hypoglyc\u00e9mie, traumatisme cr\u00e2nien, infection du syst\u00e8me nerveux central... L'examen clinique est recommand\u00e9 d\u00e8s que possible.\n\n\u2022 **En cas de besoin de contention physique** : identifier cinq aides en plus du soignant. Le patient est saisi par quatre personnes (un par membre). Une cinqui\u00e8me personne saisit la t\u00eate d\u00e8s que possible et la maintient sur le c\u00f4t\u00e9. Le patient est ensuite allong\u00e9 sur le dos chaque membre maintenu par une personne. Des sangles sp\u00e9cialis\u00e9es sont disponibles \u00e0 la Pharmappro pour les contentions sur un lit ou brancard. T\u00eate du lit est sur\u00e9lev\u00e9e pour \u00e9viter les inhalations. Placer le patient dans une pi\u00e8ce pr\u00e9vue \u00e0 cet effet, calme, prot\u00e9g\u00e9. Surveillance active indispensable",
+      "categorie": "M\u00c9DECINE ADULTE",
+      "chapter": "Agitation",
+      "section": "CE QU'IL FAUT FAIRE",
+      "page": 16,
+      "score": 0.7721245
+    }
+  ]
+}
