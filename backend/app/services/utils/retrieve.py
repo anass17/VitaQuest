@@ -1,7 +1,8 @@
 from sentence_transformers import SentenceTransformer
+import mlflow
 
 
-
+@mlflow.trace
 def hierarchical_retriever(client, cursor, query: str, emb_model: str, retrieval_top_k: int = 20, normalise: bool = True):
 
     embedder = SentenceTransformer(emb_model)

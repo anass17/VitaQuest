@@ -1,10 +1,4 @@
-import mlflow
 
-
-@mlflow.trace(name="get_llm_prompt")
-def llm_prompt(query, context):
-
-    prompt = f"""
         INSTRUCTION SYSTÈME :
 
         - Vous êtes un assistant STRICTEMENT limité au CONTEXTE fourni.
@@ -46,13 +40,10 @@ def llm_prompt(query, context):
         - Français uniquement
 
         CONTEXTE :
-        {context}
+        [Context]
 
         QUESTION :
-        {query}
+        [Query]
 
         RÉPONSE :
-    """
-
-
-    return prompt
+    

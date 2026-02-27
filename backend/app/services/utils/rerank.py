@@ -1,7 +1,9 @@
 from sentence_transformers import CrossEncoder
+import mlflow
 
 
 
+@mlflow.trace
 def chunks_reranker(query, chunks, model, rerank_top_k = 5, min_score = 0.3):
     reranker = CrossEncoder(model)
 

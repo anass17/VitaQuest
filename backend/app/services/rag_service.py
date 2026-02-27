@@ -10,7 +10,7 @@ from .utils.retrieve import hierarchical_retriever
 from .utils.rerank import chunks_reranker
 from .utils.generate import llm_generate_answer
 
-from utils.mlflow_evaluation import setup_mlflow, start_run, log_params, log_dict, log_text, log_metrics
+from utils.mlflow_evaluation import start_run, log_params, log_dict, log_text, log_metrics
 from .utils.prompt import llm_prompt
 from .utils.evaluate import evaluate_rag
 from .utils.queries import eval_queries

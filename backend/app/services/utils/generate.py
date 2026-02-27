@@ -1,8 +1,9 @@
 import requests
 from .prompt import llm_prompt
+import mlflow
 
 
-
+@mlflow.trace
 def ollama_generate(prompt: str, ollama_url: str, model: str, temperature: int = 0.2, max_tokens: int = 256) -> str:
     response = requests.post(
         ollama_url,
@@ -21,7 +22,7 @@ def ollama_generate(prompt: str, ollama_url: str, model: str, temperature: int =
     return response.json()["response"]
 
 
-
+@mlflow.trace
 def llm_generate_answer(query: str, ollama_url: str, model: str, chunks: list, temperature: int = 0.2, max_tokens: int = 256) -> str:
 
     # Build context from chunks

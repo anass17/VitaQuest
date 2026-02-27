@@ -5,8 +5,10 @@ from deepeval.metrics import (
     ContextualRecallMetric
 )
 from deepeval.test_case import LLMTestCase
+import mlflow
 
 
+@mlflow.trace
 def evaluate_rag(query, model, context_chunks, answer, expected_answer):
 
 

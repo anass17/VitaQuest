@@ -1,8 +1,9 @@
 from llama_parse import LlamaParse
 import tempfile
+import mlflow
 
 
-
+@mlflow.trace
 def extract_content_from_uploaded_pdf(uploaded_file):
 
     parser = LlamaParse(

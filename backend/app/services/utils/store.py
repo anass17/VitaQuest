@@ -5,10 +5,14 @@ from qdrant_client.models import (
     VectorParams,
     Distance
 )
+import mlflow
 
 
 # Store as vectors in Qdrant
 
+
+
+@mlflow.trace
 def store_chunks(client, chunks, emb_model, emb_size, normalise):
     points = []
 
@@ -45,6 +49,7 @@ def store_chunks(client, chunks, emb_model, emb_size, normalise):
 
 # Store in a table in SQLite
 
+@mlflow.trace
 def store_parent_chunks(cursor, conn, parent_docs: dict):
         cursor.execute('''
             DELETE FROM parents

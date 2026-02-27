@@ -54,6 +54,7 @@ def delete_duplicated_text(doc):
 
 # Chunk documents
 
+@mlflow.trace
 def chunk_markdown_documents(
     documents: list,
     source: str,
