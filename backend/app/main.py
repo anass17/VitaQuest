@@ -5,8 +5,6 @@ from schemas.query import queryData
 from utils.mlflow_evaluation import setup_mlflow
 
 
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # STARTUP code
@@ -14,7 +12,6 @@ async def lifespan(app: FastAPI):
     setup_mlflow("vitaquest-rag-expirement")
 
     yield
-
 
 
 app = FastAPI(lifespan=lifespan)
@@ -36,56 +33,54 @@ LLM_TEMPERATURE = 0.2
 LLM_MAX_TOKENS = 256
 
 
-
-@app.get('/')
+@app.get("/")
 def hello():
-    return {
-        "message": "Hello !"
-    }
-
+    return {"message": "Hello !"}
 
 
 @app.post("/document/ingest")
-async def ingest_and_chunk_document(
-    file: UploadFile = File(...)
-):
+async def ingest_and_chunk_document(file: UploadFile = File(...)):
 
-    chunks = rag_service.chunk_store_pipeline(file, EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE)
+    chunks = rag_service.chunk_store_pipeline(
+        file, EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE
+    )
 
-    return {
-        'Parent Chunks Count': len(chunks[0]),
-        'Child Chunks Count': len(chunks[1])
-    }
-
+    return {"Parent Chunks Count": len(chunks[0]), "Child Chunks Count": len(chunks[1])}
 
 
 @app.post("/answer/generate")
-async def retrieve_and_generate_llm_answer(
-    data: queryData
-):
+async def retrieve_and_generate_llm_answer(data: queryData):
 
-    answer = rag_service.retrieve_generate_pipeline(data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL)
+    answer = rag_service.retrieve_generate_pipeline(
+        data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL
+    )
 
-    return {
-        "answer": answer
-    }
-
+    return {"answer": answer}
 
 
 @app.post("/evaluate/chunking")
-async def evaluate_chunking(
-    file: UploadFile = File(...)
-):
+async def evaluate_chunking(file: UploadFile = File(...)):
 
-    response = rag_service.evaluate_chunking_pipeline(file, EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE)
+    response = rag_service.evaluate_chunking_pipeline(
+        file, EMBEDDING_MODEL, EMBEDDING_SIZE, EMBEDDING_NORMALISE
+    )
 
     return response
-
 
 
 @app.post("/evaluate/generation")
 async def evaluate_retrieval_and_generation():
 
-    answer = rag_service.evaluate_retrieval_generation_pipeline(EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL, RETRIEVAL_TOP_K, RERANK_TOP_K, MIN_RERANK_SCORE, EMBEDDING_NORMALISE, LLM_TEMPERATURE, LLM_MAX_TOKENS)
+    answer = rag_service.evaluate_retrieval_generation_pipeline(
+        EMBEDDING_MODEL,
+        CROSS_ENCODER,
+        LLM_MODEL,
+        RETRIEVAL_TOP_K,
+        RERANK_TOP_K,
+        MIN_RERANK_SCORE,
+        EMBEDDING_NORMALISE,
+        LLM_TEMPERATURE,
+        LLM_MAX_TOKENS,
+    )
 
     return answer

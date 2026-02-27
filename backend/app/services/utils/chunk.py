@@ -2,26 +2,25 @@ import re
 import uuid
 import mlflow
 
-
-
 # Get categorie name if exist
+
 
 def get_categorie(doc):
     search = re.search(r"\n# (.+)\n$", doc)
     if search:
         chapter = search.group(1)
         return chapter
-    
-    return None
 
+    return None
 
 
 # Get chapter name if exist
 
+
 def get_chapter(doc):
 
     search = re.search(r"[*]{2}(.+?)[*]{2}[| ]*[*]*Validation[* :]*COTEPRO", doc)
-    if not search: 
+    if not search:
 
         search = re.search(r"\n\n\n# .+\n# (.+)\n", doc)
         if not search:
@@ -34,16 +33,16 @@ def get_chapter(doc):
     if search:
         title = search.group(1)
         return title.replace("<br>", "")
-    
-    return None
 
+    return None
 
 
 # Cleaning: Delete duplicated text
 
+
 def delete_duplicated_text(doc):
     text = re.sub(r"[\n]+Guide des Protocoles - 2025\s*\d*\s*[\n]*", "", doc)
-    
+
     splits = re.split(r"(.+|\n)Date :[*]* 2025( [|]|[*]+|\n)", text)
 
     text = splits[-1]
@@ -51,15 +50,12 @@ def delete_duplicated_text(doc):
     return text.strip()
 
 
-
 # Chunk documents
+
 
 @mlflow.trace
 def chunk_markdown_documents(
-    documents: list,
-    source: str,
-    max_tokens: int = 500,
-    overlap: int = 80
+    documents: list, source: str, max_tokens: int = 500, overlap: int = 80
 ):
 
     documents = documents[1:]
@@ -99,16 +95,15 @@ def chunk_markdown_documents(
                 if len(sections) == 0:
                     sections = [clean_doc]
 
-            
             for section in sections:
                 lines = section.strip().split("\n")
-                
-                title = lines[0].strip("# ")                # Heading
-                content = "\n".join(lines[1:])              # Body
+
+                title = lines[0].strip("# ")  # Heading
+                content = "\n".join(lines[1:])  # Body
 
                 parent_id = str(uuid.uuid4())
                 full_parent_text = f"{title}\n{content}"
-                
+
                 # Save to Parent Store
                 parent_store[parent_id] = {
                     "content": full_parent_text,
@@ -116,24 +111,26 @@ def chunk_markdown_documents(
                         "chapter": chapter_name,
                         "section": title,
                         "categorie": categorie_name,
-                        "page": page_num
-                    }
+                        "page": page_num,
+                    },
                 }
-                
+
                 # Create Children manually
-                paragraphs = content.split('\n\n')
+                paragraphs = content.split("\n\n")
                 for para in paragraphs:
                     if len(para) > 10:
-                        child_chunks.append({
-                            "text": para.strip(),
-                            "metadata": {
-                                "parent_id": parent_id, 
-                                "header": title,
-                                "chapter": chapter_name,
-                                "categorie": categorie_name,
-                                "page": page_num,
-                                "source": source
+                        child_chunks.append(
+                            {
+                                "text": para.strip(),
+                                "metadata": {
+                                    "parent_id": parent_id,
+                                    "header": title,
+                                    "chapter": chapter_name,
+                                    "categorie": categorie_name,
+                                    "page": page_num,
+                                    "source": source,
+                                },
                             }
-                        })
+                        )
 
     return parent_store, child_chunks

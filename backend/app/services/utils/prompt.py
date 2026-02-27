@@ -54,5 +54,4 @@ def llm_prompt(query, context):
         RÉPONSE :
     """
 
-
     return prompt

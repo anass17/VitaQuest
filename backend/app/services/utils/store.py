@@ -1,15 +1,9 @@
 import uuid
 from sentence_transformers import SentenceTransformer
-from qdrant_client.models import (
-    PointStruct,
-    VectorParams,
-    Distance
-)
+from qdrant_client.models import PointStruct, VectorParams, Distance
 import mlflow
 
-
 # Store as vectors in Qdrant
-
 
 
 @mlflow.trace
@@ -18,10 +12,7 @@ def store_chunks(client, chunks, emb_model, emb_size, normalise):
 
     client.recreate_collection(
         collection_name="manual_chunks",
-        vectors_config=VectorParams(
-            size=emb_size,
-            distance=Distance.COSINE
-        ),
+        vectors_config=VectorParams(size=emb_size, distance=Distance.COSINE),
     )
 
     embedder = SentenceTransformer(emb_model)
@@ -30,47 +21,40 @@ def store_chunks(client, chunks, emb_model, emb_size, normalise):
         vector = embedder.encode(chunk["text"], normalize_embeddings=normalise)
 
         payload = chunk["metadata"].copy()
-        payload['content'] = chunk["text"]
+        payload["content"] = chunk["text"]
 
         points.append(
-            PointStruct(
-                id=str(uuid.uuid4()),
-                vector=vector.tolist(),
-                payload=payload
-            )
+            PointStruct(id=str(uuid.uuid4()), vector=vector.tolist(), payload=payload)
         )
 
-    client.upsert(
-        collection_name="manual_chunks",
-        points=points
-    )
-
+    client.upsert(collection_name="manual_chunks", points=points)
 
 
 # Store in a table in SQLite
 
+
 @mlflow.trace
 def store_parent_chunks(cursor, conn, parent_docs: dict):
-        cursor.execute('''
+    cursor.execute("""
             DELETE FROM parents
-        ''')
-        conn.commit()
+        """)
+    conn.commit()
 
-        for id, doc in parent_docs.items():
+    for id, doc in parent_docs.items():
 
-            parent_id = id
-            content = doc["content"]
-            chapter = doc["metadata"].get('chapter', 'Unknown')
-            section = doc["metadata"].get('section', 'Unknown')
-            categorie = doc["metadata"].get('categorie', 'Unknown')
-            page = doc["metadata"].get('page', 'Unknown')
-            
-            # Save Parent to SQLite
-            cursor.execute(
-                "INSERT INTO parents (id, text, chapter, section, categorie, page) VALUES (?, ?, ?, ?, ?, ?)",
-                (parent_id, content, chapter, section, categorie, page)
-            )
-        
-        conn.commit()
+        parent_id = id
+        content = doc["content"]
+        chapter = doc["metadata"].get("chapter", "Unknown")
+        section = doc["metadata"].get("section", "Unknown")
+        categorie = doc["metadata"].get("categorie", "Unknown")
+        page = doc["metadata"].get("page", "Unknown")
 
-        return True
+        # Save Parent to SQLite
+        cursor.execute(
+            "INSERT INTO parents (id, text, chapter, section, categorie, page) VALUES (?, ?, ?, ?, ?, ?)",
+            (parent_id, content, chapter, section, categorie, page),
+        )
+
+    conn.commit()
+
+    return True

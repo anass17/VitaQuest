@@ -19,10 +19,7 @@ def extract_content_from_uploaded_pdf(uploaded_file):
         tmp_path = tmp.name
 
     # Parse with LlamaParse
-    documents = parser.load_data(
-        tmp_path,
-        extra_info={"invalidate_cache": True}
-    )
+    documents = parser.load_data(tmp_path, extra_info={"invalidate_cache": True})
 
     print(f"Pages parsed: {len(documents)}")
 

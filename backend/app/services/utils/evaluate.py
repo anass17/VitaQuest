@@ -2,7 +2,7 @@ from deepeval.metrics import (
     AnswerRelevancyMetric,
     FaithfulnessMetric,
     ContextualPrecisionMetric,
-    ContextualRecallMetric
+    ContextualRecallMetric,
 )
 from deepeval.test_case import LLMTestCase
 import mlflow
@@ -11,14 +11,13 @@ import mlflow
 @mlflow.trace
 def evaluate_rag(query, model, context_chunks, answer, expected_answer):
 
-
     context_text = [c["text"] for c in context_chunks]
 
     test_case = LLMTestCase(
         input=query,
         actual_output=answer,
         expected_output=expected_answer,
-        retrieval_context=context_text
+        retrieval_context=context_text,
     )
 
     # Metrics
@@ -37,5 +36,5 @@ def evaluate_rag(query, model, context_chunks, answer, expected_answer):
         "answer_relevancy": answer_relevancy.score,
         "faithfulness": faithfulness.score,
         "precision_at_k": precision.score,
-        "recall_at_k": recall.score
+        "recall_at_k": recall.score,
     }
