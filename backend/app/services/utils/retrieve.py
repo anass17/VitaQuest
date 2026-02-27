@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 
 
 
-def hierarchical_retriever(client, cursor, query: str, emb_model: str, retrieval_top_k: int = 20, normalise: bool = True, mlflow_log: bool = False):
+def hierarchical_retriever(client, cursor, query: str, emb_model: str, retrieval_top_k: int = 20, normalise: bool = True):
 
     embedder = SentenceTransformer(emb_model)
 
@@ -40,10 +40,4 @@ def hierarchical_retriever(client, cursor, query: str, emb_model: str, retrieval
                 })
                 seen_parents.add(p_id)
             
-
-    # if mlflow_log:
-    #     log_metrics({
-    #         "Number of retrived chunks": len(retrieved_chunks)
-    #     })
-
     return final_context

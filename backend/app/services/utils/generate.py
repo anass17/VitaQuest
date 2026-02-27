@@ -29,9 +29,6 @@ def llm_generate_answer(query: str, ollama_url: str, model: str, chunks: list, t
                         for c in chunks])
 
 
-    # log_text(llm_prompt("[Query]", "[Context]"), "prompt_template.txt")
-
-
     prompt = llm_prompt(query, context)
     answer = ollama_generate(prompt, ollama_url, model, temperature, max_tokens)
 

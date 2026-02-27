@@ -3,7 +3,7 @@ import tempfile
 
 
 
-def extract_content_from_uploaded_pdf(uploaded_file, mlflow_log = False):
+def extract_content_from_uploaded_pdf(uploaded_file):
 
     parser = LlamaParse(
         result_type="markdown",
@@ -24,10 +24,6 @@ def extract_content_from_uploaded_pdf(uploaded_file, mlflow_log = False):
     )
 
     print(f"Pages parsed: {len(documents)}")
-
-    # log_metrics({
-    #     "Pages Parsed": len(documents)
-    # })
 
     # Return text
     if len(documents) > 0:
