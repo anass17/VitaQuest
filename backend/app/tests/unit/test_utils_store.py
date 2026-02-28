@@ -1,6 +1,6 @@
 import numpy as np
 from unittest.mock import patch, MagicMock
-from app.services.utils.store import store_chunks
+from app.services.utils.store import store_chunks, store_parent_chunks
 
 
 @patch("app.services.utils.store.SentenceTransformer")
@@ -46,12 +46,6 @@ def test_store_chunks(mock_sentence_transformer):
     assert len(points) == 2
     assert points[0].payload["content"] == "chunk 1 text"
     assert points[1].payload["content"] == "chunk 2 text"
-
-
-
-
-from unittest.mock import MagicMock
-from app.services.utils.store import store_parent_chunks
 
 
 def test_store_parent_chunks():

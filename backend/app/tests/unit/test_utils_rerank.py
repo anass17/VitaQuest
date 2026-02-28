@@ -19,11 +19,7 @@ def test_chunks_reranker(mock_cross_encoder):
     ]
 
     result = chunks_reranker(
-        query=query,
-        chunks=chunks,
-        model="fake-model",
-        rerank_top_k=2,
-        min_score=0.3
+        query=query, chunks=chunks, model="fake-model", rerank_top_k=2, min_score=0.3
     )
 
     assert result == [

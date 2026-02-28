@@ -1,3 +1,4 @@
+import numpy as np
 from unittest.mock import patch, MagicMock
 from app.services.utils.retrieve import hierarchical_retriever
 
@@ -8,7 +9,7 @@ def test_hierarchical_retriever(mock_sentence_transformer):
     # Mock embedding model
     mock_embedder = MagicMock()
     mock_sentence_transformer.return_value = mock_embedder
-    mock_embedder.encode.return_value = [0.1, 0.2, 0.3]
+    mock_embedder.encode.return_value = np.array([0.1, 0.2, 0.3])
 
     # Mock Qdrant client
     mock_client = MagicMock()

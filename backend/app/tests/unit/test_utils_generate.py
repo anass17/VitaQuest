@@ -22,10 +22,6 @@ def test_ollama_generate(mock_post):
     mock_post.assert_called_once()
 
 
-
-
-
-
 @patch("app.services.utils.generate.ollama_generate")
 @patch("app.services.utils.generate.llm_prompt")
 def test_llm_generate_answer(mock_prompt, mock_ollama):
