@@ -63,6 +63,33 @@ def test_chunk_markdown_documents():
     parent_chunks, child_chunks = chunk_markdown_documents(documents, "file_name")
 
     assert list(parent_chunks.items())[0][1] == expected_parent_chunk
+
+    parent_id = list(parent_chunks.items())[0][0]
+
+    expected_child_chunks_1 = {
+        "text": "• List Item 1",
+        "metadata": {
+            "parent_id": parent_id,
+            "header": "CE QU'IL FAUT SAVOIR",
+            "chapter": "Diarrhée",
+            "categorie": "PÉDIATRIE",
+            "page": 2,
+            "source": "file_name",
+        },
+    }
+
+    expected_child_chunks_2 = {
+        "text": "• List Item 2",
+        "metadata": {
+            "parent_id": parent_id,
+            "header": "CE QU'IL FAUT SAVOIR",
+            "chapter": "Diarrhée",
+            "categorie": "PÉDIATRIE",
+            "page": 2,
+            "source": "file_name",
+        },
+    }
+
     assert len(child_chunks) == 2
-    assert child_chunks[0]["text"] == "• List Item 1"
-    assert child_chunks[1]["text"] == "• List Item 2"
+    assert child_chunks[0] == expected_child_chunks_1
+    assert child_chunks[1] == expected_child_chunks_2

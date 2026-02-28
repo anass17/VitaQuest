@@ -84,13 +84,3 @@ async def evaluate_retrieval_and_generation():
     )
 
     return answer
-
-from services.utils.extract import extract_content_from_uploaded_pdf
-
-
-
-@app.post("/ddd")
-async def ingest_and_chunk_document(file: UploadFile = File(...)):
-    s = extract_content_from_uploaded_pdf(file)
-
-    return s
