@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from app.services.utils.retrieve import hierarchical_retriever
 

@@ -26,8 +26,8 @@ def test_ollama_generate(mock_post):
 
 
 
-@patch("app.services.llm.ollama_generate")
-@patch("app.services.llm.llm_prompt")
+@patch("app.services.utils.generate.ollama_generate")
+@patch("app.services.utils.generate.llm_prompt")
 def test_llm_generate_answer(mock_prompt, mock_ollama):
 
     mock_prompt.return_value = "FINAL PROMPT"
