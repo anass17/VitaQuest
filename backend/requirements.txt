@@ -16,19 +16,19 @@ python-jose
 passlib[bcrypt]
 
 # PDF Processing
-pdfplumber
-PyPDF2
+# pdfplumber
+# PyPDF2
 llama_parse
 
 # LangChain & RAG
-langchain
+# langchain
 openai
 sentence-transformers
 transformers
 
 # Vector Store
 qdrant-client
-fastembed
+# fastembed
 
 # Utilities
 python-dotenv
