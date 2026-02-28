@@ -5,8 +5,8 @@ from db.base import Base
 from db.session import engine
 from routes.rag import router as rag_router
 from routes.auth import router as auth_router
-import db.models
 from fastapi.middleware.cors import CORSMiddleware
+import db.models  # noqa: F401
 
 origins = [
     "http://localhost:3000",  # dev on host
@@ -16,10 +16,9 @@ origins = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # STARTUP code
 
+    # Create database tables
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created")
 
     setup_mlflow("vitaquest-rag-expirement")
 
