@@ -13,8 +13,8 @@ from prometheus_client import Counter, Histogram
 import time
 
 origins = [
-    "http://localhost:3000",  # dev on host
-    "http://frontend:3000",  # frontend container
+    "http://localhost:3571",  # dev on host
+    "http://frontend:5173",  # frontend container
 ]
 
 
