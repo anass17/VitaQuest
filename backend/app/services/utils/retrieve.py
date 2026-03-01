@@ -7,12 +7,10 @@ def hierarchical_retriever(
     client,
     cursor,
     query: str,
-    emb_model: str,
+    embedder: SentenceTransformer,
     retrieval_top_k: int = 20,
     normalise: bool = True,
 ):
-
-    embedder = SentenceTransformer(emb_model)
 
     # Embed the query
     query_vector = embedder.encode(query, normalize_embeddings=normalise).tolist()
@@ -24,6 +22,8 @@ def hierarchical_retriever(
         limit=retrieval_top_k,
         with_payload=True,
     )
+
+    print(client.count("manual_chunks"))
 
     final_context = []
     seen_parents = set()

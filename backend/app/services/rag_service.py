@@ -1,5 +1,6 @@
 import sqlite3
 from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
 from deepeval.models import OllamaModel
 
 from .utils.extract import extract_content_from_uploaded_pdf
@@ -22,15 +23,17 @@ from .utils.evaluate import evaluate_rag
 from .utils.queries import eval_queries
 
 from random import choice
+from models.query import QueryModel
 
 
 class RAGService:
 
-    def __init__(self):
+    def __init__(self, emb_model):
         self.client = QdrantClient(url="http://qdrant:6333")
         self.conn = sqlite3.connect("../rag_chunks.db")
         self.ollama_url = "http://host.docker.internal:11434/api/generate"
         self.cursor = self.conn.cursor()
+        self.embedder = SentenceTransformer(emb_model)
         self.ollama_model = OllamaModel(
             model="llama3:8b", base_url="http://host.docker.internal:11434"
         )
@@ -60,10 +63,14 @@ class RAGService:
         store_chunks(self.client, chunks[1], emb_model, emb_size, normalize)
 
         return chunks
+    
+
 
     def retrieve_generate_pipeline(
         self,
+        db,
         query,
+        user_id,
         emb_model,
         cross_model,
         llm_model,
@@ -72,14 +79,15 @@ class RAGService:
         rerank_min_score=0.3,
         normalise=True,
         temperature=0.2,
-        max_tokens=256,
+        max_tokens=500,
+        op=False
     ):
 
         chunks = hierarchical_retriever(
             self.client,
             self.cursor,
             query,
-            emb_model,
+            self.embedder,
             retrieval_top_k,
             normalise,
         )
@@ -91,6 +99,9 @@ class RAGService:
         answer = llm_generate_answer(
             query, self.ollama_url, llm_model, reranked_chunks, temperature, max_tokens
         )
+
+        if op:
+            QueryModel(db).create_query(query, answer, user_id)
 
         return answer
 
@@ -160,7 +171,7 @@ class RAGService:
             )
 
             chunks = hierarchical_retriever(
-                self.client, self.cursor, query, emb_model, retrieval_top_k, normalise
+                self.client, self.cursor, query, self.embedder, retrieval_top_k, normalise
             )
 
             reranked_chunks = chunks_reranker(
@@ -202,3 +213,39 @@ class RAGService:
             log_metrics(metrics)
 
             return {"query": query, "answer": answer, "metrics": metrics}
+
+
+    def get_chunks(
+        self,
+        query,
+        emb_model,
+        cross_model,
+        retrieval_top_k=20,
+        rerank_top_k=5,
+        rerank_min_score=0.3,
+        normalise=True,
+    ):
+        
+        chunks = hierarchical_retriever(
+            self.client,
+            self.cursor,
+            query,
+            self.embedder,
+            retrieval_top_k,
+            normalise,
+        )
+
+        reranked_chunks = chunks_reranker(
+            query, chunks, cross_model, rerank_top_k, rerank_min_score
+        )
+
+        return {
+            "chunks": chunks,
+            "reranked_chunks": reranked_chunks
+        }
+    
+
+    def get_queries(self, db, user_id):
+        queries = QueryModel(db).get_user_queries(user_id)
+
+        return queries

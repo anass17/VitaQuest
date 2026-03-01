@@ -1,9 +1,10 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from schemas.query import queryData
 from services.rag_service import RAGService
 from prometheus_client import Counter, Histogram
+from core.deps import require_roles
+from db.deps import get_db
 import time
-
 
 
 CHUNK_MAX_TOKENS = 500
@@ -17,7 +18,7 @@ RERANK_TOP_K = 5
 MIN_RERANK_SCORE = 0.3
 LLM_MODEL = "llama3:8b"
 LLM_TEMPERATURE = 0.2
-LLM_MAX_TOKENS = 256
+LLM_MAX_TOKENS = 500
 
 
 # Request counter
@@ -45,7 +46,7 @@ rag_latency = Histogram(
 # )
 
 
-rag_service = RAGService()
+rag_service = RAGService(EMBEDDING_MODEL)
 
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
@@ -63,8 +64,21 @@ async def ingest_and_chunk_document(file: UploadFile = File(...)):
 
 
 
+@router.post("/chunks")
+async def get_chunks_from_query(data: queryData):
+
+    answer = rag_service.get_chunks(data.query, EMBEDDING_MODEL, CROSS_ENCODER)
+
+    return answer
+
+
+
 @router.post("/generate")
-async def retrieve_and_generate_llm_answer(data: queryData):
+async def retrieve_and_generate_llm_answer(
+    data: queryData,
+    db = Depends(get_db),
+    user_id = Depends(require_roles("USER")),
+):
 
     rag_requests.inc()
 
@@ -73,7 +87,7 @@ async def retrieve_and_generate_llm_answer(data: queryData):
     try:
 
         answer = rag_service.retrieve_generate_pipeline(
-            data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL
+            db, data.query, user_id, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL, op=True
         )
 
         latency = time.time() - start
@@ -114,3 +128,15 @@ async def evaluate_retrieval_and_generation():
     )
 
     return answer
+
+
+@router.get("/queries")
+async def evaluate_retrieval_and_generation(
+    db = Depends(get_db),
+    user_id = Depends(require_roles("USER")),
+):
+    queries = rag_service.get_queries(db, user_id)
+
+    return {
+        "queries": queries
+    }

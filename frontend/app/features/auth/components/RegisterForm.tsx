@@ -56,9 +56,7 @@ export default function RegisterForm() {
       localStorage.setItem("last_name", response.last_name);
       localStorage.setItem("role", response.role);
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000)
+      navigate("/chat");
 
     } else {
 

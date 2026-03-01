@@ -55,9 +55,7 @@ export default function LoginForm() {
       localStorage.setItem("last_name", response.last_name);
       localStorage.setItem("role", response.role);
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000)
+      navigate("/chat");
 
     } else if (request.status == 401) {
 
@@ -168,7 +166,7 @@ export default function LoginForm() {
 
       <div className="mt-8 text-center text-sm text-slate-500">
         <span>Don't have an account? </span>
-        <Link to="/signup" className="text-emerald-500 font-bold hover:underline transition-all">
+        <Link to="/register" className="text-emerald-500 font-bold hover:underline transition-all">
           Sign up
         </Link>
       </div>
