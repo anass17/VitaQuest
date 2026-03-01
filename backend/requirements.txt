@@ -40,3 +40,4 @@ pytest
 mlflow
 deepeval
 ollama
+prometheus-client

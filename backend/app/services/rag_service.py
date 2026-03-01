@@ -48,10 +48,10 @@ class RAGService:
         self.conn.commit()
 
     def chunk_store_pipeline(
-        self, uploaded_file, emb_model, emb_size, normalize=True, mlflow_log=False
+        self, uploaded_file, emb_model, emb_size, normalize=True
     ):
 
-        documents = extract_content_from_uploaded_pdf(uploaded_file, mlflow_log)
+        documents = extract_content_from_uploaded_pdf(uploaded_file)
 
         chunks = chunk_markdown_documents(documents, uploaded_file.filename)
 
@@ -73,7 +73,6 @@ class RAGService:
         normalise=True,
         temperature=0.2,
         max_tokens=256,
-        mlflow_log=False,
     ):
 
         chunks = hierarchical_retriever(
@@ -83,11 +82,10 @@ class RAGService:
             emb_model,
             retrieval_top_k,
             normalise,
-            mlflow_log,
         )
 
         reranked_chunks = chunks_reranker(
-            query, chunks, cross_model, rerank_top_k, rerank_min_score, mlflow_log
+            query, chunks, cross_model, rerank_top_k, rerank_min_score
         )
 
         answer = llm_generate_answer(

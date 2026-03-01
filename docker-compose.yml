@@ -37,18 +37,20 @@ services:
 
 
   frontend:
-    build: ./frontend
+    build: 
+      context: .
+      dockerfile: frontend/Dockerfile
     container_name: vitaquest_frontend
     ports:
-      - "3000:3000"
+      - "3571:5173"
     volumes:
       - ./frontend:/app
-      - /app/node_modules        # ANONYMOUS VOLUME: This protects the container's node_modules
+      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - REACT_APP_API_URL=http://backend:8000
-    command: npm run dev
+    command: npm run dev -- --host
 
 
   mlflow:
@@ -71,8 +73,44 @@ services:
         --port 5000
         --allowed-hosts "*"
 
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vitaquest_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      # - ./alerts.yml:/etc/prometheus/alerts.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: vitaquest_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_storage:/var/lib/grafana
+      # - ./grafana/provisioning:/etc/grafana/provisioning
+      # - ./grafana/dashboards:/var/lib/grafana/dashboards
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    container_name: vitaquest_cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
 volumes:
   pgdata:
   qdrant_storage:
+  grafana_storage:
 
   

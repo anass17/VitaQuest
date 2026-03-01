@@ -1,6 +1,10 @@
 from fastapi import APIRouter, UploadFile, File
 from schemas.query import queryData
 from services.rag_service import RAGService
+from prometheus_client import Counter, Histogram
+import time
+
+
 
 CHUNK_MAX_TOKENS = 500
 CHUNK_OVERLAP = 80
@@ -16,10 +20,36 @@ LLM_TEMPERATURE = 0.2
 LLM_MAX_TOKENS = 256
 
 
+# Request counter
+rag_requests = Counter(
+    "rag_requests_total",
+    "Total number of RAG queries"
+)
+
+# Errors
+rag_errors = Counter(
+    "rag_errors_total",
+    "Total RAG errors"
+)
+
+# Latency
+rag_latency = Histogram(
+    "rag_pipeline_latency_seconds",
+    "RAG pipeline latency"
+)
+
+# Quality metrics
+# faithfulness_score = Gauge(
+#     "rag_faithfulness_score",
+#     "Faithfulness score of answers"
+# )
+
+
 rag_service = RAGService()
 
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
+
 
 
 @router.post("/ingest")
@@ -32,14 +62,29 @@ async def ingest_and_chunk_document(file: UploadFile = File(...)):
     return {"Parent Chunks Count": len(chunks[0]), "Child Chunks Count": len(chunks[1])}
 
 
+
 @router.post("/generate")
 async def retrieve_and_generate_llm_answer(data: queryData):
 
-    answer = rag_service.retrieve_generate_pipeline(
-        data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL
-    )
+    rag_requests.inc()
 
-    return {"answer": answer}
+    start = time.time()
+
+    try:
+
+        answer = rag_service.retrieve_generate_pipeline(
+            data.query, EMBEDDING_MODEL, CROSS_ENCODER, LLM_MODEL
+        )
+
+        latency = time.time() - start
+        rag_latency.observe(latency)
+
+        return {"answer": answer}
+    
+    except Exception:
+        rag_errors.inc()
+        raise
+
 
 
 @router.post("/evaluate/chunking")
@@ -50,6 +95,7 @@ async def evaluate_chunking(file: UploadFile = File(...)):
     )
 
     return response
+
 
 
 @router.post("/evaluate/generation")
