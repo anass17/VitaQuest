@@ -6,7 +6,6 @@ from core.deps import require_roles
 from db.deps import get_db
 import time
 
-
 CHUNK_MAX_TOKENS = 500
 CHUNK_OVERLAP = 80
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
@@ -22,22 +21,13 @@ LLM_MAX_TOKENS = 500
 
 
 # Request counter
-rag_requests = Counter(
-    "rag_requests_total",
-    "Total number of RAG queries"
-)
+rag_requests = Counter("rag_requests_total", "Total number of RAG queries")
 
 # Errors
-rag_errors = Counter(
-    "rag_errors_total",
-    "Total RAG errors"
-)
+rag_errors = Counter("rag_errors_total", "Total RAG errors")
 
 # Latency
-rag_latency = Histogram(
-    "rag_pipeline_latency_seconds",
-    "RAG pipeline latency"
-)
+rag_latency = Histogram("rag_pipeline_latency_seconds", "RAG pipeline latency")
 
 # Quality metrics
 # faithfulness_score = Gauge(
@@ -52,7 +42,6 @@ rag_service = RAGService(EMBEDDING_MODEL)
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
 
-
 @router.post("/ingest")
 async def ingest_and_chunk_document(file: UploadFile = File(...)):
 
@@ -63,7 +52,6 @@ async def ingest_and_chunk_document(file: UploadFile = File(...)):
     return {"Parent Chunks Count": len(chunks[0]), "Child Chunks Count": len(chunks[1])}
 
 
-
 @router.post("/chunks")
 async def get_chunks_from_query(data: queryData):
 
@@ -72,12 +60,11 @@ async def get_chunks_from_query(data: queryData):
     return answer
 
 
-
 @router.post("/generate")
 async def retrieve_and_generate_llm_answer(
     data: queryData,
-    db = Depends(get_db),
-    user_id = Depends(require_roles("USER")),
+    db=Depends(get_db),
+    user_id=Depends(require_roles("USER")),
 ):
 
     rag_requests.inc()
@@ -94,11 +81,10 @@ async def retrieve_and_generate_llm_answer(
         rag_latency.observe(latency)
 
         return {"answer": answer}
-    
+
     except Exception:
         rag_errors.inc()
         raise
-
 
 
 @router.post("/evaluate/chunking")
@@ -109,7 +95,6 @@ async def evaluate_chunking(file: UploadFile = File(...)):
     )
 
     return response
-
 
 
 @router.post("/evaluate/generation")
@@ -132,11 +117,9 @@ async def evaluate_retrieval_and_generation():
 
 @router.get("/queries")
 async def evaluate_retrieval_and_generation(
-    db = Depends(get_db),
-    user_id = Depends(require_roles("USER")),
+    db=Depends(get_db),
+    user_id=Depends(require_roles("USER")),
 ):
     queries = rag_service.get_queries(db, user_id)
 
-    return {
-        "queries": queries
-    }
+    return {"queries": queries}

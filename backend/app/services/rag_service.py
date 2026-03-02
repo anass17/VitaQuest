@@ -50,9 +50,7 @@ class RAGService:
         """)
         self.conn.commit()
 
-    def chunk_store_pipeline(
-        self, uploaded_file, emb_model, emb_size, normalize=True
-    ):
+    def chunk_store_pipeline(self, uploaded_file, emb_model, emb_size, normalize=True):
 
         documents = extract_content_from_uploaded_pdf(uploaded_file)
 
@@ -63,8 +61,6 @@ class RAGService:
         store_chunks(self.client, chunks[1], emb_model, emb_size, normalize)
 
         return chunks
-    
-
 
     def retrieve_generate_pipeline(
         self,
@@ -80,7 +76,7 @@ class RAGService:
         normalise=True,
         temperature=0.2,
         max_tokens=500,
-        op=False
+        op=False,
     ):
 
         chunks = hierarchical_retriever(
@@ -171,7 +167,12 @@ class RAGService:
             )
 
             chunks = hierarchical_retriever(
-                self.client, self.cursor, query, self.embedder, retrieval_top_k, normalise
+                self.client,
+                self.cursor,
+                query,
+                self.embedder,
+                retrieval_top_k,
+                normalise,
             )
 
             reranked_chunks = chunks_reranker(
@@ -214,7 +215,6 @@ class RAGService:
 
             return {"query": query, "answer": answer, "metrics": metrics}
 
-
     def get_chunks(
         self,
         query,
@@ -225,7 +225,7 @@ class RAGService:
         rerank_min_score=0.3,
         normalise=True,
     ):
-        
+
         chunks = hierarchical_retriever(
             self.client,
             self.cursor,
@@ -239,11 +239,7 @@ class RAGService:
             query, chunks, cross_model, rerank_top_k, rerank_min_score
         )
 
-        return {
-            "chunks": chunks,
-            "reranked_chunks": reranked_chunks
-        }
-    
+        return {"chunks": chunks, "reranked_chunks": reranked_chunks}
 
     def get_queries(self, db, user_id):
         queries = QueryModel(db).get_user_queries(user_id)

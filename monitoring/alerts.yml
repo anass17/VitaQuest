@@ -1,0 +1,47 @@
+groups:
+- name: api-alerts
+  rules:
+
+  - alert: ApiDown
+    expr: up{job="fastapi-metrics"} == 0
+    for: 30s
+    labels:
+      severity: critical
+    annotations:
+      summary: "FastAPI is down"
+      description: "The FastAPI service is not reachable."
+
+  - alert: HighErrorRate
+    expr: |
+      sum(rate(http_requests_total{status=~"5.."}[1m]))
+      /
+      sum(rate(http_requests_total[1m]))
+      > 0.05
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High 5xx error rate"
+      description: "More than 5% of requests are failing."
+
+  - alert: HighCPUUsage
+    expr: |
+      sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service="api"}[1m]))
+      > 0.8
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage"
+      description: "FastAPI container CPU usage is high."
+
+  - alert: HighMemoryUsage
+    expr: |
+      container_memory_usage_bytes{container_label_com_docker_compose_service="api"}
+      > 500 * 1024 * 1024
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High RAM usage"
+      description: "FastAPI container is using more than 500MB RAM."

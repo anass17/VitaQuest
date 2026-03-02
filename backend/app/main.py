@@ -43,25 +43,18 @@ app.add_middleware(
 REQUEST_COUNT = Counter(
     "http_requests_total",
     "Total number of HTTP requests",
-    ["method", "endpoint", "status"]
+    ["method", "endpoint", "status"],
 )
 
 REQUEST_LATENCY = Histogram(
-    "http_request_latency_seconds",
-    "Latency of HTTP requests",
-    ["endpoint"]
+    "http_request_latency_seconds", "Latency of HTTP requests", ["endpoint"]
 )
 
 INFERENCE_TIME = Histogram(
-    "model_inference_seconds",
-    "Time spent during model inference"
+    "model_inference_seconds", "Time spent during model inference"
 )
 
-ERROR_COUNT = Counter(
-    "http_errors_total",
-    "Total number of errors",
-    ["endpoint"]
-)
+ERROR_COUNT = Counter("http_errors_total", "Total number of errors", ["endpoint"])
 
 
 @app.middleware("http")
@@ -72,9 +65,7 @@ async def metrics_middleware(request: Request, call_next):
 
     endpoint = request.url.path
     REQUEST_COUNT.labels(
-        method=request.method,
-        endpoint=endpoint,
-        status=response.status_code
+        method=request.method, endpoint=endpoint, status=response.status_code
     ).inc()
 
     REQUEST_LATENCY.labels(endpoint=endpoint).observe(latency)
@@ -85,10 +76,8 @@ async def metrics_middleware(request: Request, call_next):
     return response
 
 
-
 app.include_router(auth_router)
 app.include_router(rag_router)
-
 
 
 @app.get("/")
