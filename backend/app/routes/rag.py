@@ -116,7 +116,7 @@ async def evaluate_retrieval_and_generation():
 
 
 @router.get("/queries")
-async def evaluate_retrieval_and_generation(
+async def get_all_queries(
     db=Depends(get_db),
     user_id=Depends(require_roles("USER")),
 ):

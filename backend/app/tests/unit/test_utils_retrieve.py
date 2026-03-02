@@ -40,7 +40,6 @@ def test_hierarchical_retriever():
         cursor=mock_cursor,
         query="AI definition",
         embedder=mock_embedder,
-        emb_model="fake-model",
         retrieval_top_k=3,
     )
 

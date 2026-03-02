@@ -126,7 +126,7 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
-    container_name: alertmanager
+    container_name: vitaquest_alertmanager
     ports:
       - "9093:9093"
     volumes:
